@@ -499,7 +499,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         mRecentsKillAllButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                killAllRecentApps();
+                mRecentsContainer.removeAllViewsInLayout();
             }
         });
     }
