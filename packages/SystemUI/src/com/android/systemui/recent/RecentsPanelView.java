@@ -71,6 +71,7 @@ import com.android.systemui.statusbar.tablet.TabletStatusBar;
 import com.android.internal.util.MemInfoReader;
 
 import java.util.ArrayList;
+import java.io.OutputStreamWriter;
 
 public class RecentsPanelView extends FrameLayout implements OnItemClickListener, RecentsCallback,
         StatusBarPanel, Animator.AnimatorListener {
@@ -502,6 +503,23 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
                 mRecentsContainer.removeAllViewsInLayout();
             }
         });
+        mRecentsKillAllButton.setOnLongClickListener(new OnLongClickListener() {
+		@Override
+		public boolean onLongClick(View v) {
+		    mRecentsContainer.removeAllViewsInLayout();
+		    try {
+		        ProcessBuilder pb = new ProcessBuilder("su", "-c", "/system/bin/sh");
+		        OutputStreamWriter osw = new OutputStreamWriter(pb.start().getOutputStream());
+		        osw.write("sync" + "\n" + "echo 3 > /proc/sys/vm/drop_caches" + "\n");
+		        osw.write("\nexit\n");
+		        osw.flush();
+		        osw.close();
+		    } catch (Exception e) {
+		        Log.d(TAG, "Flush caches failed!");
+		    }
+		    return true;
+		}
+	    });
     }
 
     public void setMinSwipeAlpha(float minAlpha) {
