@@ -32,6 +32,7 @@ import android.view.ViewTreeObserver;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.os.Handler;
 
 import com.android.systemui.R;
 import com.android.systemui.SwipeHelper;
@@ -174,6 +175,21 @@ public class RecentsHorizontalScrollView extends HorizontalScrollView
     @Override
     public void removeViewInLayout(final View view) {
         dismissChild(view);
+    }
+
+    @Override
+    public void removeAllViewsInLayout() {
+        smoothScrollTo(0, 0);
+        int count = mLinearLayout.getChildCount();
+        for (int i = 0; i < count; i++) {
+            final View child = mLinearLayout.getChildAt(i);
+            postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    dismissChild(child);
+                }
+            }, i * 150);
+        }
     }
 
     public boolean onInterceptTouchEvent(MotionEvent ev) {

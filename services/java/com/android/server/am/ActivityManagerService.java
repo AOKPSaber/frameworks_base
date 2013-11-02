@@ -96,6 +96,7 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.ConditionVariable;
 import android.os.Debug;
 import android.os.DropBoxManager;
 import android.os.Environment;
@@ -664,6 +665,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     boolean mProcessesReady = false;
     boolean mSystemReady = false;
     boolean mBooting = false;
+    ConditionVariable mBootingCondition = new ConditionVariable();
     boolean mWaitingUpdate = false;
     boolean mDidUpdate = false;
     boolean mOnBattery = false;
@@ -1077,7 +1079,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                     mHandler.sendMessageDelayed(nmsg, ActiveServices.SERVICE_TIMEOUT);
                     return;
                 }
-                mServices.serviceTimeout((ProcessRecord)msg.obj);
+                //synchronising to avoid proc.executingServices set
+                //getting updated while being iterated in serviceTimeout()
+                synchronized(ActivityManagerService.this){
+                    mServices.serviceTimeout((ProcessRecord)msg.obj);
+                }
             } break;
             case UPDATE_TIME_ZONE: {
                 synchronized (ActivityManagerService.this) {
@@ -7955,6 +7961,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
             // Start up initial activity.
             mBooting = true;
+            mBootingCondition.open();
             
             try {
                 if (AppGlobals.getPackageManager().hasSystemUidErrors()) {
@@ -8130,7 +8137,8 @@ public final class ActivityManagerService extends ActivityManagerNative
                 // Also terminate any activities below it that aren't yet
                 // stopped, to avoid a situation where one will get
                 // re-start our crashing activity once it gets resumed again.
-                index--;
+                while (index >= mMainStack.mHistory.size())
+                    index--;
                 if (index >= 0) {
                     r = (ActivityRecord)mMainStack.mHistory.get(index);
                     if (r.state == ActivityState.RESUMED

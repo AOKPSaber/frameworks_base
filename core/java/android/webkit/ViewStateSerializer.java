@@ -49,9 +49,26 @@ class ViewStateSerializer {
 
     static DrawData deserializeViewState(InputStream stream)
             throws IOException {
-        DataInputStream dis = new DataInputStream(stream);
-        int version = dis.readInt();
+        if (stream == null)
+            throw new IOException("Null input stream");
+        DataInputStream dis = null;
+        int version = -1;
+        try {
+            dis = new DataInputStream(stream);
+            version = dis.readInt();
+        }
+        catch (IOException e) {
+            try{
+                stream.close();
+            }
+            catch(IOException ex){}
+            throw e;
+        }
         if (version > VERSION) {
+            try{
+                stream.close();
+            }
+            catch(IOException ex){}
             throw new IOException("Unexpected version: " + version);
         }
         int contentWidth = dis.readInt();
@@ -63,7 +80,10 @@ class ViewStateSerializer {
         draw.mViewState = new WebViewCore.ViewState();
         draw.mContentSize = new Point(contentWidth, contentHeight);
         draw.mBaseLayer = baseLayer;
-        stream.close();
+        try{
+            stream.close();
+        }
+        catch(IOException ex){}
         return draw;
     }
 
